@@ -63,7 +63,9 @@ exports.handler = async (event, context) => {
     ...messages.map((m) => ({ role: m.role, content: m.content }))
   ];
 
-  try {
+  const FALLBACK_MODEL = 'gpt-4o-mini';
+
+  async function callOpenAI(useModel) {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -71,13 +73,23 @@ exports.handler = async (event, context) => {
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model,
+        model: useModel,
         messages: openAiMessages,
         max_tokens: 1024,
         temperature: 0.7
       })
     });
-    const data = await res.json().catch(() => ({}));
+    return { res, data: await res.json().catch(() => ({})) };
+  }
+
+  try {
+    let { res, data } = await callOpenAI(model);
+    const isModelError = !res.ok && (data.error?.code === 'model_not_found' || data.error?.message?.toLowerCase().includes('model'));
+    if (isModelError && model !== FALLBACK_MODEL) {
+      const fallback = await callOpenAI(FALLBACK_MODEL);
+      res = fallback.res;
+      data = fallback.data;
+    }
     if (!res.ok) {
       return jsonResponse({
         error: data.error?.message || data.error?.code || `OpenAI error ${res.status}`

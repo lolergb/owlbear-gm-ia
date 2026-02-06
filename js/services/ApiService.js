@@ -59,6 +59,10 @@ export class ApiService {
         return { content: '', error: 'Has alcanzado el límite de mensajes del plan gratuito. Conéctate con Patreon para premium.' };
       }
 
+      if (data.error) {
+        return { content: '', error: typeof data.error === 'string' ? data.error : (data.error.message || data.error.code || 'Error del servidor') };
+      }
+
       const content = (data.choices && data.choices[0] && data.choices[0].message)
         ? data.choices[0].message.content
         : (data.content || '');
