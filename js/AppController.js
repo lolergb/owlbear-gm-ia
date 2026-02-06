@@ -39,8 +39,10 @@ export class AppController {
         send();
       }
     });
+    input?.addEventListener('input', () => this.chatPanel.hideNotice());
 
     btnSettings?.addEventListener('click', () => {
+      this.chatPanel.hideNotice();
       settingsPanel?.classList.remove('hidden');
     });
     btnSettingsClose?.addEventListener('click', () => {
@@ -92,15 +94,17 @@ export class AppController {
     const text = this.chatPanel.getInputValue();
     if (!text) return;
 
+    this.chatPanel.hideNotice();
+
     if (!this.configService.hasValidApiBase()) {
-      this.chatPanel.appendMessage('assistant', 'Configura la URL del backend en Ajustes (icono de engranaje).', true);
+      this.chatPanel.showNotice('Configura la URL del backend en Ajustes (icono de engranaje).', true);
       return;
     }
 
     const usedToday = getUsedToday();
     const tierInfo = await this.tierService.getTier();
     if (!this.tierService.canSendMessage(usedToday, tierInfo.dailyLimit)) {
-      this.chatPanel.appendMessage('assistant', 'Has alcanzado el límite de mensajes del plan gratuito. Conéctate con Patreon para premium.', true);
+      this.chatPanel.showNotice('Límite de mensajes del plan gratuito alcanzado. Conéctate con Patreon para premium.', true);
       return;
     }
 
@@ -119,22 +123,24 @@ export class AppController {
     if (this._loadingEl) {
       if (result.error) {
         this.chatService.addErrorMessage(result.error);
-        this.chatPanel.replaceLoadingWithMessage(this._loadingEl, result.error, true);
+        this.chatPanel.replaceLoadingWithMessage(this._loadingEl, result.error || 'Error desconocido.', true);
       } else {
         incrementUsedToday();
-        this.chatService.addAssistantMessage(result.content);
-        this.chatPanel.replaceLoadingWithMessage(this._loadingEl, result.content);
+        const content = result.content || '(Sin respuesta.)';
+        this.chatService.addAssistantMessage(content);
+        this.chatPanel.replaceLoadingWithMessage(this._loadingEl, content);
       }
       this._loadingEl = null;
     } else {
       this.chatPanel.removeLoading();
       if (result.error) {
         this.chatService.addErrorMessage(result.error);
-        this.chatPanel.appendMessage('assistant', result.error, true);
+        this.chatPanel.appendMessage('assistant', result.error || 'Error desconocido.', true);
       } else {
         incrementUsedToday();
-        this.chatService.addAssistantMessage(result.content);
-        this.chatPanel.appendMessage('assistant', result.content);
+        const content = result.content || '(Sin respuesta.)';
+        this.chatService.addAssistantMessage(content);
+        this.chatPanel.appendMessage('assistant', content);
       }
     }
 

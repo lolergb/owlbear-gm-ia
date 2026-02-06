@@ -11,6 +11,29 @@ export class ChatPanel {
     this.sendBtn = container?.querySelector('#btn-send');
     this.limitsEl = container?.querySelector('#chat-limits');
     this.tierBadge = document.getElementById('tier-badge');
+    this.noticeEl = container?.querySelector('#chat-notice');
+    this._noticeTimeout = null;
+  }
+
+  /** Muestra un aviso temporal (no se añade al chat). Se oculta solo a los 5 s o al escribir. */
+  showNotice(message, isError = true) {
+    if (!this.noticeEl) return;
+    this.hideNotice();
+    this.noticeEl.textContent = message;
+    this.noticeEl.className = 'chat__notice chat__notice--' + (isError ? 'error' : 'info');
+    this.noticeEl.classList.remove('hidden');
+    this._noticeTimeout = setTimeout(() => this.hideNotice(), 5000);
+  }
+
+  hideNotice() {
+    if (this._noticeTimeout) {
+      clearTimeout(this._noticeTimeout);
+      this._noticeTimeout = null;
+    }
+    if (this.noticeEl) {
+      this.noticeEl.classList.add('hidden');
+      this.noticeEl.textContent = '';
+    }
   }
 
   hideWelcome() {
