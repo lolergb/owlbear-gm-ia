@@ -4,12 +4,12 @@
   "manifest_version": 1,
   "author": "lolergb",
   "description": "Asistente experto en D&D 5e basado en SRD 5.2. ChatGPT con agente especializado.",
-  "homepage_url": "https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf",
-  "icon": "icon.svg",
+  "homepage_url": "https://github.com/lolergb/owlbear-gm-ia",
+  "icon": "https://owlbear-gm-ia.netlify.app/icon.svg",
   "action": {
     "title": "GM IA",
-    "icon": "icon.svg",
-    "popover": "/index.html",
+    "icon": "https://owlbear-gm-ia.netlify.app/icon.svg",
+    "popover": "https://owlbear-gm-ia.netlify.app/index.html",
     "height": 700,
     "width": 420
   }
