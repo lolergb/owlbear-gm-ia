@@ -286,16 +286,30 @@ html, body {
 }
 
 .msg__content {
-  white-space: pre-wrap;
   word-break: break-word;
 }
 
-.msg__content p {
-  margin-bottom: 0.5em;
+.msg__content br {
+  display: block;
+  content: "";
+  margin-top: 0.25em;
 }
 
-.msg__content p:last-child {
-  margin-bottom: 0;
+.msg__content strong {
+  font-weight: 700;
+}
+
+.msg__content em {
+  font-style: italic;
+}
+
+.msg__content a {
+  color: var(--color-accent-link);
+  text-decoration: none;
+}
+
+.msg__content a:hover {
+  text-decoration: underline;
 }
 
 .msg--loading .msg__content::after {
@@ -402,7 +416,7 @@ html, body {
 }
 
 /* ==========================================================================
-   Settings panel
+   Settings panel (fondo opaco para buena legibilidad)
    ========================================================================== */
 .settings-panel {
   position: absolute;
@@ -410,15 +424,21 @@ html, body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--color-bg-primary);
+  background: var(--color-bg-surface);
   z-index: 10;
   padding: 14px;
   overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
 }
 
 .settings-panel.hidden,
 .hidden {
   display: none !important;
+}
+
+.settings-panel__content {
+  color: var(--color-text-primary);
 }
 
 .settings-panel__content h2 {
@@ -429,7 +449,7 @@ html, body {
 
 .settings-panel__hint {
   font-size: 13px;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   margin-bottom: 16px;
 }
 
@@ -440,7 +460,7 @@ html, body {
 .settings-panel__field label {
   display: block;
   font-size: 12px;
-  color: var(--color-text-muted);
+  color: var(--color-text-primary);
   margin-bottom: 4px;
 }
 
@@ -449,9 +469,13 @@ html, body {
   padding: 8px 10px;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--color-bg-surface);
+  background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+}
+
+.settings-panel__field input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .settings-panel__field input:focus {

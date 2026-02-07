@@ -2,6 +2,8 @@
  * @fileoverview Panel de chat: renderiza mensajes, input y límites freemium.
  */
 
+import { markdownToHtml } from '../utils/markdown.js';
+
 export class ChatPanel {
   constructor(container) {
     this.container = container;
@@ -51,7 +53,11 @@ export class ChatPanel {
     div.className = `msg msg--${role}${isError ? ' msg--error' : ''}`;
     const inner = document.createElement('div');
     inner.className = 'msg__content';
-    inner.textContent = content;
+    if (role === 'assistant' && !isError) {
+      inner.innerHTML = markdownToHtml(content);
+    } else {
+      inner.textContent = content;
+    }
     div.appendChild(inner);
     this.messagesEl.appendChild(div);
     this.scrollToBottom();
@@ -77,7 +83,13 @@ export class ChatPanel {
     loadingEl.classList.remove('msg--loading');
     loadingEl.removeAttribute('data-loading');
     const contentEl = loadingEl.querySelector('.msg__content');
-    if (contentEl) contentEl.textContent = content;
+    if (contentEl) {
+      if (!isError) {
+        contentEl.innerHTML = markdownToHtml(content);
+      } else {
+        contentEl.textContent = content;
+      }
+    }
     if (isError) loadingEl.classList.add('msg--error');
     this.scrollToBottom();
   }
