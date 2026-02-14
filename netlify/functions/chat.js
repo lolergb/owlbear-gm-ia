@@ -4,7 +4,7 @@
  * Reference: SRD 5.2 https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf
  */
 
-function buildSystemPrompt(documentUrls = '') {
+function buildSystemPrompt(documentUrls = '', vaultContext = '') {
   let prompt = `You are an expert assistant for Dungeons & Dragons 5th edition (D&D 5e). Your knowledge is based on the official SRD 5.2 (Systems Reference Document) under Creative Commons license, available at: https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf`;
 
   if (documentUrls) {
@@ -12,6 +12,10 @@ function buildSystemPrompt(documentUrls = '') {
     if (urls.length > 0) {
       prompt += `\n\nAdditional reference documents:\n${urls.map(u => `- ${u}`).join('\n')}`;
     }
+  }
+
+  if (vaultContext) {
+    prompt += vaultContext;
   }
 
   prompt += `\n\nYou must:
@@ -61,7 +65,7 @@ exports.handler = async (event, context) => {
     return jsonResponse({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { messages = [], model = 'gpt-4o-mini', documentUrls = '' } = body;
+  const { messages = [], model = 'gpt-4o-mini', documentUrls = '', vaultContext = '' } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return jsonResponse({ error: 'messages array required' }, 400);
   }
@@ -69,7 +73,7 @@ exports.handler = async (event, context) => {
   const patreonToken = event.headers['x-patreon-token'] || event.headers['X-Patreon-Token'];
   const isPremium = Boolean(patreonToken && process.env.PATREON_PREMIUM_TOKEN && patreonToken === process.env.PATREON_PREMIUM_TOKEN);
 
-  const systemPrompt = buildSystemPrompt(documentUrls);
+  const systemPrompt = buildSystemPrompt(documentUrls, vaultContext);
   const openAiMessages = [
     { role: 'system', content: systemPrompt },
     ...messages.map((m) => ({ role: m.role, content: m.content }))

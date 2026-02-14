@@ -8,6 +8,7 @@ const KEY_API_BASE = STORAGE_KEY_PREFIX + 'api-base-url';
 const KEY_PATREON_TOKEN = STORAGE_KEY_PREFIX + 'patreon-token';
 const KEY_DOCUMENT_URLS = STORAGE_KEY_PREFIX + 'document-urls';
 const KEY_AI_MODEL = STORAGE_KEY_PREFIX + 'ai-model';
+const KEY_USE_VAULT = STORAGE_KEY_PREFIX + 'use-vault';
 
 export class ConfigService {
   constructor() {
@@ -15,6 +16,7 @@ export class ConfigService {
     this._patreonToken = null;
     this._documentUrls = null;
     this._aiModel = null;
+    this._useVault = null;
     this._load();
   }
 
@@ -26,6 +28,7 @@ export class ConfigService {
       this._patreonToken = localStorage.getItem(KEY_PATREON_TOKEN) || '';
       this._documentUrls = localStorage.getItem(KEY_DOCUMENT_URLS) || '';
       this._aiModel = localStorage.getItem(KEY_AI_MODEL) || 'gpt-4o-mini';
+      this._useVault = localStorage.getItem(KEY_USE_VAULT) === 'true';
     } catch (e) {
       console.warn('[GM AI] ConfigService: error loading config', e);
     }
@@ -89,6 +92,19 @@ export class ConfigService {
       else localStorage.removeItem(KEY_AI_MODEL);
     } catch (e) {
       console.warn('[GM AI] ConfigService: error saving ai model', e);
+    }
+  }
+
+  getUseVault() {
+    return this._useVault === true;
+  }
+
+  setUseVault(enabled) {
+    this._useVault = Boolean(enabled);
+    try {
+      localStorage.setItem(KEY_USE_VAULT, this._useVault ? 'true' : 'false');
+    } catch (e) {
+      console.warn('[GM AI] ConfigService: error saving use vault setting', e);
     }
   }
 }

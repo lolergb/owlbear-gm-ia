@@ -52,6 +52,13 @@
             <option value="gpt-3.5-turbo">GPT-3.5 Turbo (basic)</option>
           </select>
         </div>
+        <div class="settings-panel__field settings-panel__field--checkbox" id="vault-integration-container">
+          <label class="checkbox-label">
+            <input type="checkbox" id="use-vault">
+            <span>Include GM Vault content as context</span>
+          </label>
+          <small id="vault-status" class="vault-status"></small>
+        </div>
         <div class="settings-panel__field">
           <label for="document-urls">Document URLs (one per line)</label>
           <textarea id="document-urls" rows="4" placeholder="https://example.com/doc1.pdf&#10;https://example.com/doc2.pdf"></textarea>

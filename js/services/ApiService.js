@@ -17,7 +17,7 @@ export class ApiService {
   /**
    * Envía la conversación al backend y devuelve la respuesta del asistente.
    * @param {Array<{ role: string, content: string }>} messages
-   * @param {{ model?: string, documentUrls?: string }} options
+   * @param {{ model?: string, documentUrls?: string, vaultContext?: string }} options
    * @returns {Promise<{ content: string, error?: string }>}
    */
   async chat(messages, options = {}) {
@@ -30,7 +30,8 @@ export class ApiService {
     const body = {
       messages,
       model: options.model || this.configService.getAiModel() || DEFAULT_MODEL,
-      documentUrls: options.documentUrls || this.configService.getDocumentUrls()
+      documentUrls: options.documentUrls || this.configService.getDocumentUrls(),
+      vaultContext: options.vaultContext || ''
     };
 
     const token = this.configService.getPatreonToken();

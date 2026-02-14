@@ -5,6 +5,7 @@
 import { ConfigService, TierService, ChatService, ApiService } from './services/index.js';
 import { getUsedToday, incrementUsedToday } from './services/UsageTracker.js';
 import { ChatPanel } from './ui/ChatPanel.js';
+import { VaultIntegrationService } from './services/VaultIntegrationService.js';
 
 export class AppController {
   constructor() {
@@ -12,6 +13,7 @@ export class AppController {
     this.tierService = new TierService(this.configService);
     this.chatService = new ChatService();
     this.apiService = new ApiService(this.configService);
+    this.vaultService = new VaultIntegrationService();
     this.chatPanel = new ChatPanel(document.getElementById('app'));
     this._loadingEl = null;
   }
@@ -20,6 +22,7 @@ export class AppController {
     await this._refreshTier();
     this._bindEvents();
     this._loadSettingsIntoUI();
+    this._updateVaultStatus();
   }
 
   _bindEvents() {
@@ -29,6 +32,7 @@ export class AppController {
     const btnSettingsClose = document.getElementById('btn-settings-close');
     const btnSettingsSave = document.getElementById('btn-settings-save');
     const settingsPanel = document.getElementById('settings-panel');
+    const useVaultCheckbox = document.getElementById('use-vault');
 
     const send = () => this._sendMessage();
     sendBtn?.addEventListener('click', send);
@@ -42,6 +46,7 @@ export class AppController {
 
     btnSettings?.addEventListener('click', () => {
       this.chatPanel.hideNotice();
+      this._updateVaultStatus();
       settingsPanel?.classList.remove('hidden');
     });
 
@@ -54,6 +59,10 @@ export class AppController {
       settingsPanel?.classList.add('hidden');
       this.tierService.invalidateCache();
       this._refreshTier();
+    });
+
+    useVaultCheckbox?.addEventListener('change', () => {
+      this._updateVaultStatus();
     });
 
     this.chatPanel.limitsEl?.addEventListener('click', (e) => {
@@ -69,10 +78,13 @@ export class AppController {
     const patreon = document.getElementById('patreon-token');
     const documentUrls = document.getElementById('document-urls');
     const aiModel = document.getElementById('ai-model');
+    const useVault = document.getElementById('use-vault');
+    
     if (apiBase) apiBase.value = this.configService.getApiBaseUrl();
     if (patreon) patreon.value = this.configService.getPatreonToken();
     if (documentUrls) documentUrls.value = this.configService.getDocumentUrls();
     if (aiModel) aiModel.value = this.configService.getAiModel();
+    if (useVault) useVault.checked = this.configService.getUseVault();
   }
 
   _saveSettingsFromUI() {
@@ -80,10 +92,44 @@ export class AppController {
     const patreon = document.getElementById('patreon-token');
     const documentUrls = document.getElementById('document-urls');
     const aiModel = document.getElementById('ai-model');
+    const useVault = document.getElementById('use-vault');
+    
     if (apiBase) this.configService.setApiBaseUrl(apiBase.value);
     if (patreon) this.configService.setPatreonToken(patreon.value);
     if (documentUrls) this.configService.setDocumentUrls(documentUrls.value);
     if (aiModel) this.configService.setAiModel(aiModel.value);
+    if (useVault) this.configService.setUseVault(useVault.checked);
+  }
+
+  _updateVaultStatus() {
+    const statusEl = document.getElementById('vault-status');
+    const useVaultCheckbox = document.getElementById('use-vault');
+    const containerEl = document.getElementById('vault-integration-container');
+    
+    if (!statusEl || !containerEl) return;
+
+    const isAvailable = this.vaultService.isVaultAvailable();
+    
+    if (isAvailable) {
+      const vaultData = this.vaultService.getVaultData();
+      const pageCount = vaultData?.pages?.length || 0;
+      const categoryCount = vaultData?.categories?.length || 0;
+      
+      statusEl.textContent = `✓ GM Vault detected: ${pageCount} pages in ${categoryCount} categories`;
+      statusEl.className = 'vault-status available';
+      
+      if (useVaultCheckbox) {
+        useVaultCheckbox.disabled = false;
+      }
+    } else {
+      statusEl.textContent = '✗ GM Vault not detected';
+      statusEl.className = 'vault-status unavailable';
+      
+      if (useVaultCheckbox) {
+        useVaultCheckbox.disabled = true;
+        useVaultCheckbox.checked = false;
+      }
+    }
   }
 
   async _refreshTier() {
@@ -111,8 +157,14 @@ export class AppController {
 
     this._loadingEl = this.chatPanel.appendLoading();
 
+    // Get vault context if enabled
+    let vaultContext = '';
+    if (this.configService.getUseVault() && this.vaultService.isVaultAvailable()) {
+      vaultContext = this.vaultService.getVaultSummary();
+    }
+
     const messages = this.chatService.getApiMessages(undefined);
-    const result = await this.apiService.chat(messages);
+    const result = await this.apiService.chat(messages, { vaultContext });
 
     this.chatPanel.setInputDisabled(false);
 
