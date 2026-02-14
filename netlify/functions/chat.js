@@ -4,16 +4,28 @@
  * Referencia: SRD 5.2 https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf
  */
 
-const SYSTEM_PROMPT = `Eres un asistente experto en Dungeons & Dragons 5ª edición (D&D 5e). Tu conocimiento se basa en el documento oficial SRD 5.2 (Systems Reference Document) bajo licencia Creative Commons, disponible en: https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf
+function buildSystemPrompt(documentUrls = '') {
+  let prompt = `Eres un asistente experto en Dungeons & Dragons 5ª edición (D&D 5e). Tu conocimiento se basa en el documento oficial SRD 5.2 (Systems Reference Document) bajo licencia Creative Commons, disponible en: https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf`;
 
-Debes:
+  if (documentUrls) {
+    const urls = documentUrls.split('\n').map(u => u.trim()).filter(u => u);
+    if (urls.length > 0) {
+      prompt += `\n\nDocumentos adicionales de referencia:\n${urls.map(u => `- ${u}`).join('\n')}`;
+    }
+  }
+
+  prompt += `\n\nDebes:
+- Responder de forma CONCISA y DIRECTA. Evita introducciones largas.
 - Responder en el mismo idioma que use el usuario (español o inglés).
-- Basar tus respuestas en las reglas del SRD 5.2 cuando sea posible.
-- Ser claro y conciso sobre reglas, criaturas, hechizos, clases, razas y mecánicas.
-- Si algo no está en el SRD, indicarlo y dar una respuesta razonable según las convenciones de 5e.
-- Citar brevemente la fuente (ej. "según el SRD 5.2...") cuando sea relevante.
+- Basar tus respuestas en las reglas del SRD 5.2 y los documentos adicionales proporcionados.
+- Ser claro y directo sobre reglas, criaturas, hechizos, clases, razas y mecánicas.
+- Si algo no está en el SRD o documentos adicionales, indicarlo brevemente.
+- Citar la fuente solo si es esencial para la respuesta.
 
-No inventes contenido que contradiga el SRD. Para contenido bajo otra licencia (p. ej. contenido propietario de D&D Beyond), indica que no está en el SRD gratuito.`;
+IMPORTANTE: Respuestas BREVES y AL GRANO. Sin florituras innecesarias.`;
+
+  return prompt;
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -50,7 +62,7 @@ exports.handler = async (event, context) => {
     return jsonResponse({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { messages = [], model = 'gpt-5-nano' } = body;
+  const { messages = [], model = 'gpt-4o-mini', documentUrls = '' } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return jsonResponse({ error: 'messages array required' }, 400);
   }
@@ -58,8 +70,9 @@ exports.handler = async (event, context) => {
   const patreonToken = event.headers['x-patreon-token'] || event.headers['X-Patreon-Token'];
   const isPremium = Boolean(patreonToken && process.env.PATREON_PREMIUM_TOKEN && patreonToken === process.env.PATREON_PREMIUM_TOKEN);
 
+  const systemPrompt = buildSystemPrompt(documentUrls);
   const openAiMessages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: systemPrompt },
     ...messages.map((m) => ({ role: m.role, content: m.content }))
   ];
 

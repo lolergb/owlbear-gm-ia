@@ -51,6 +51,20 @@
           <input type="url" id="api-base-url" placeholder="https://tu-sitio.netlify.app">
         </div>
         <div class="settings-panel__field">
+          <label for="ai-model">Motor de IA</label>
+          <select id="ai-model">
+            <option value="gpt-4o-mini">GPT-4o Mini (rápido, económico)</option>
+            <option value="gpt-4o">GPT-4o (equilibrado)</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo (avanzado)</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (básico)</option>
+          </select>
+        </div>
+        <div class="settings-panel__field">
+          <label for="document-urls">URLs de documentos (una por línea)</label>
+          <textarea id="document-urls" rows="4" placeholder="https://example.com/doc1.pdf&#10;https://example.com/doc2.pdf"></textarea>
+          <small>Documentos que la IA consultará para responder</small>
+        </div>
+        <div class="settings-panel__field">
           <label for="patreon-token">Token Patreon (opcional, para premium)</label>
           <input type="password" id="patreon-token" placeholder="Tu token de Patreon" autocomplete="off">
         </div>

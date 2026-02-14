@@ -464,7 +464,9 @@ html, body {
   margin-bottom: 4px;
 }
 
-.settings-panel__field input {
+.settings-panel__field input,
+.settings-panel__field textarea,
+.settings-panel__field select {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--color-border-subtle);
@@ -472,15 +474,31 @@ html, body {
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+  font-family: inherit;
 }
 
-.settings-panel__field input::placeholder {
+.settings-panel__field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.settings-panel__field input::placeholder,
+.settings-panel__field textarea::placeholder {
   color: var(--color-text-muted);
 }
 
-.settings-panel__field input:focus {
+.settings-panel__field input:focus,
+.settings-panel__field textarea:focus,
+.settings-panel__field select:focus {
   outline: none;
   border-color: var(--color-accent-primary);
+}
+
+.settings-panel__field small {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
 }
 
 .settings-panel #btn-settings-close {

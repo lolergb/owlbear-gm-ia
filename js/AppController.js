@@ -29,6 +29,8 @@ export class AppController {
     const btnSettingsClose = document.getElementById('btn-settings-close');
     const apiBaseUrl = document.getElementById('api-base-url');
     const patreonToken = document.getElementById('patreon-token');
+    const documentUrls = document.getElementById('document-urls');
+    const aiModel = document.getElementById('ai-model');
     const settingsPanel = document.getElementById('settings-panel');
 
     const send = () => this._sendMessage();
@@ -60,6 +62,8 @@ export class AppController {
     };
     apiBaseUrl?.addEventListener('blur', saveAndClose);
     patreonToken?.addEventListener('blur', saveAndClose);
+    documentUrls?.addEventListener('blur', saveAndClose);
+    aiModel?.addEventListener('change', saveAndClose);
 
     this.chatPanel.limitsEl?.addEventListener('click', (e) => {
       if (e.target?.getAttribute('data-action') === 'patreon') {
@@ -72,15 +76,23 @@ export class AppController {
   _loadSettingsIntoUI() {
     const apiBase = document.getElementById('api-base-url');
     const patreon = document.getElementById('patreon-token');
+    const documentUrls = document.getElementById('document-urls');
+    const aiModel = document.getElementById('ai-model');
     if (apiBase) apiBase.value = this.configService.getApiBaseUrl();
     if (patreon) patreon.value = this.configService.getPatreonToken();
+    if (documentUrls) documentUrls.value = this.configService.getDocumentUrls();
+    if (aiModel) aiModel.value = this.configService.getAiModel();
   }
 
   _saveSettingsFromUI() {
     const apiBase = document.getElementById('api-base-url');
     const patreon = document.getElementById('patreon-token');
+    const documentUrls = document.getElementById('document-urls');
+    const aiModel = document.getElementById('ai-model');
     if (apiBase) this.configService.setApiBaseUrl(apiBase.value);
     if (patreon) this.configService.setPatreonToken(patreon.value);
+    if (documentUrls) this.configService.setDocumentUrls(documentUrls.value);
+    if (aiModel) this.configService.setAiModel(aiModel.value);
   }
 
   async _refreshTier() {

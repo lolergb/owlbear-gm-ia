@@ -3,7 +3,7 @@
  * La API key de OpenAI NUNCA se envía desde el cliente; el backend la inyecta.
  */
 
-const DEFAULT_MODEL = 'gpt-5-nano';
+const DEFAULT_MODEL = 'gpt-4o-mini';
 
 export class ApiService {
   constructor(configService) {
@@ -17,7 +17,7 @@ export class ApiService {
   /**
    * Envía la conversación al backend y devuelve la respuesta del asistente.
    * @param {Array<{ role: string, content: string }>} messages
-   * @param {{ model?: string }} options
+   * @param {{ model?: string, documentUrls?: string }} options
    * @returns {Promise<{ content: string, error?: string }>}
    */
   async chat(messages, options = {}) {
@@ -29,7 +29,8 @@ export class ApiService {
     const url = `${base}/.netlify/functions/chat`;
     const body = {
       messages,
-      model: options.model || DEFAULT_MODEL
+      model: options.model || this.configService.getAiModel() || DEFAULT_MODEL,
+      documentUrls: options.documentUrls || this.configService.getDocumentUrls()
     };
 
     const token = this.configService.getPatreonToken();
