@@ -25,15 +25,12 @@ ${urlList.map(u => `- ${u}`).join('\n')}
     prompt += vaultContext;
   }
 
-  prompt += `\n\nYou must:
-- Respond CONCISELY and DIRECTLY. Avoid long introductions.
-- Base your answers on: (1) SRD 5.2, (2) the user's document URLs above if present, (3) GM Vault pages if listed.
-- Do NOT say you "cannot read PDFs" or "cannot access documents". The user's document URLs are their reference materials; cite them by URL or "your document" when relevant.
-- Be clear and direct about rules, creatures, spells, classes, races, and mechanics.
-- If something is not in the SRD or you are unsure, indicate it briefly.
-- Only cite sources if essential to the answer.
-
-IMPORTANT: Keep responses BRIEF and TO THE POINT. No unnecessary elaboration.`;
+  prompt += `\n\nSTRICT RULES:
+- Maximum 2-4 short sentences per answer. Never write paragraphs.
+- No introductions like "Generally...", "It depends...", "You could...". Answer the question directly.
+- No suggestions to "consult your document" unless the user explicitly asks where to look. If you don't know the exact rule, give one concrete option and stop.
+- Base answers on: SRD 5.2, user's document URLs, GM Vault. Do NOT say you cannot read PDFs or documents.
+- One skill check suggestion = one line (e.g. "Arcana CD 13" or "Prueba de Arcana CD 13"). No explaining when to use it unless asked.`;
 
   return prompt;
 }
