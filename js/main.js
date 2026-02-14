@@ -25,7 +25,7 @@ OBR.onReady(async () => {
     }
   }
   appController = new AppController();
-  appController.init();
+  appController.init(OBR);
 });
 
 window.gmIa = {

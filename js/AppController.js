@@ -18,7 +18,12 @@ export class AppController {
     this._loadingEl = null;
   }
 
-  async init() {
+  async init(OBR) {
+    // Initialize vault integration with OBR
+    if (OBR) {
+      await this.vaultService.init(OBR);
+    }
+    
     await this._refreshTier();
     this._bindEvents();
     this._loadSettingsIntoUI();
