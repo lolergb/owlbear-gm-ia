@@ -16,6 +16,7 @@ export class VaultIntegrationService {
     this._isListening = false;
     this._playerId = null;
     this._playerName = 'GM AI';
+    this._pendingRequest = null; // Para resolver la promesa cuando llega la respuesta
   }
 
   /**
@@ -55,25 +56,46 @@ export class VaultIntegrationService {
   _setupBroadcastListeners() {
     if (!this.OBR || this._isListening) return;
 
+    console.log('[GM AI] Setting up broadcast listeners...');
+
     // Listen for full vault broadcasts (sent by GM when saving or when requested)
     this.OBR.broadcast.onMessage(BROADCAST_CHANNEL_RESPONSE_FULL_VAULT, (event) => {
-      const { config } = event.data;
+      console.log('[GM AI] Broadcast received on RESPONSE_FULL_VAULT channel:', event.data);
+      const { config, requesterId } = event.data;
       if (config) {
         console.log('[GM AI] Received vault update from GM');
         this._processVaultConfig(config);
+        
+        // Resolver promesa pendiente si existe
+        if (this._pendingRequest && (!requesterId || requesterId === this._playerId)) {
+          console.log('[GM AI] Resolving pending request');
+          this._pendingRequest.resolve(true);
+          this._pendingRequest = null;
+        }
+      } else {
+        console.warn('[GM AI] Received broadcast but no config data');
       }
     });
 
     // Listen for visible pages updates (lighter payload)
     this.OBR.broadcast.onMessage(BROADCAST_CHANNEL_VISIBLE_PAGES, (event) => {
+      console.log('[GM AI] Broadcast received on VISIBLE_PAGES channel');
       const { config } = event.data;
       if (config) {
         console.log('[GM AI] Received visible pages update from GM');
         this._processVaultConfig(config);
+        
+        // También resolver promesa pendiente con visible pages
+        if (this._pendingRequest) {
+          console.log('[GM AI] Resolving pending request with visible pages');
+          this._pendingRequest.resolve(true);
+          this._pendingRequest = null;
+        }
       }
     });
 
     this._isListening = true;
+    console.log('[GM AI] Broadcast listeners active');
   }
 
   /**
@@ -84,16 +106,15 @@ export class VaultIntegrationService {
     if (!this.OBR) return;
 
     try {
-      // 1. Try to get from room metadata (visible pages only)
+      // 1. Try to get from room metadata (visible pages only - quick check)
       const metadata = await this.OBR.room.getMetadata();
       if (metadata && metadata[ROOM_METADATA_KEY]) {
-        console.log('[GM AI] Found vault data in room metadata');
+        console.log('[GM AI] Found vault structure in room metadata');
         this._processVaultConfig(metadata[ROOM_METADATA_KEY]);
-        return;
       }
 
-      // 2. Request full vault from GM via broadcast
-      console.log('[GM AI] Requesting vault from GM...');
+      // 2. ALWAYS request full vault from GM via broadcast (to get complete data)
+      console.log('[GM AI] Requesting full vault from GM...');
       await this.requestVaultFromGM();
     } catch (e) {
       console.warn('[GM AI] Error getting initial vault data:', e);
@@ -101,24 +122,52 @@ export class VaultIntegrationService {
   }
 
   /**
-   * Requests vault data from GM via broadcast
-   * @returns {Promise<boolean>} True if request was sent
+   * Requests vault data from GM via broadcast with timeout
+   * @returns {Promise<boolean>} True if vault was received
    */
   async requestVaultFromGM() {
-    if (!this.OBR) return false;
-
-    try {
-      await this.OBR.broadcast.sendMessage(BROADCAST_CHANNEL_REQUEST_FULL_VAULT, {
-        requesterId: this._playerId,
-        requesterName: this._playerName,
-        timestamp: Date.now()
-      });
-      console.log('[GM AI] Vault request sent to GM');
-      return true;
-    } catch (e) {
-      console.warn('[GM AI] Error requesting vault from GM:', e);
+    if (!this.OBR) {
+      console.warn('[GM AI] Cannot request vault: OBR not available');
       return false;
     }
+
+    return new Promise((resolve, reject) => {
+      console.log('[GM AI] Requesting vault from GM...');
+      
+      // Timeout de 5 segundos
+      const timeout = setTimeout(() => {
+        console.warn('[GM AI] Timeout waiting for vault response from GM (5s)');
+        this._pendingRequest = null;
+        resolve(false);
+      }, 5000);
+      
+      // Guardar la promesa pendiente para que el listener la resuelva
+      this._pendingRequest = {
+        resolve: (success) => {
+          clearTimeout(timeout);
+          resolve(success);
+        },
+        reject: (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      };
+      
+      // Enviar solicitud
+      try {
+        this.OBR.broadcast.sendMessage(BROADCAST_CHANNEL_REQUEST_FULL_VAULT, {
+          requesterId: this._playerId,
+          requesterName: this._playerName,
+          timestamp: Date.now()
+        });
+        console.log('[GM AI] Vault request sent to GM (waiting for response...)');
+      } catch (e) {
+        console.error('[GM AI] Error sending vault request:', e);
+        clearTimeout(timeout);
+        this._pendingRequest = null;
+        resolve(false);
+      }
+    });
   }
 
   /**

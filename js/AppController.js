@@ -49,10 +49,11 @@ export class AppController {
     });
     input?.addEventListener('input', () => this.chatPanel.hideNotice());
 
-    btnSettings?.addEventListener('click', () => {
+    btnSettings?.addEventListener('click', async () => {
       this.chatPanel.hideNotice();
-      this._updateVaultStatus();
       settingsPanel?.classList.remove('hidden');
+      // Request fresh vault data when opening settings
+      await this._updateVaultStatus();
     });
 
     btnSettingsClose?.addEventListener('click', () => {
@@ -106,13 +107,24 @@ export class AppController {
     if (useVault) this.configService.setUseVault(useVault.checked);
   }
 
-  _updateVaultStatus() {
+  async _updateVaultStatus() {
     const statusEl = document.getElementById('vault-status');
     const useVaultCheckbox = document.getElementById('use-vault');
     const containerEl = document.getElementById('vault-integration-container');
     
     if (!statusEl || !containerEl) return;
 
+    // Show loading state
+    statusEl.textContent = '⏳ Checking for GM Vault...';
+    statusEl.className = 'vault-status unavailable';
+    if (useVaultCheckbox) {
+      useVaultCheckbox.disabled = true;
+    }
+
+    // Request vault from GM
+    const received = await this.vaultService.requestVaultFromGM();
+    
+    // Update status based on result
     const isAvailable = this.vaultService.isVaultAvailable();
     
     if (isAvailable) {
@@ -127,7 +139,7 @@ export class AppController {
         useVaultCheckbox.disabled = false;
       }
     } else {
-      statusEl.textContent = '✗ GM Vault not detected';
+      statusEl.textContent = '✗ GM Vault not detected (no response from GM)';
       statusEl.className = 'vault-status unavailable';
       
       if (useVaultCheckbox) {
