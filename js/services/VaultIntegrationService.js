@@ -5,6 +5,8 @@
  */
 
 // Room metadata keys used by GM Vault
+/** Compact summary written by GM Vault for GM AI (cross-domain bridge) */
+const ROOM_METADATA_VAULT_SUMMARY_GM_IA = 'com.dmscreen/vaultSummaryForGMIA';
 const ROOM_METADATA_FULL_CONFIG = 'com.dmscreen/fullConfig';
 const ROOM_METADATA_PAGES_CONFIG = 'com.dmscreen/pagesConfig';
 
@@ -50,7 +52,8 @@ export class VaultIntegrationService {
   }
 
   /**
-   * Loads vault data from OBR room metadata (always available, no need for GM Vault to be open)
+   * Loads vault data from OBR room metadata (cross-domain: same room, any extension).
+   * Prefers the bridge key written by GM Vault for GM AI.
    * @returns {Promise<boolean>} True if data was found
    * @private
    */
@@ -61,21 +64,28 @@ export class VaultIntegrationService {
       const metadata = await this.OBR.room.getMetadata();
       console.log('[GM AI] Room metadata keys:', Object.keys(metadata || {}));
 
-      // 1. Try fullConfig first (has ALL pages, not just visible-to-players)
+      // 1. Prefer vault summary for GM AI (bridge key written by GM Vault when saving)
+      if (metadata && metadata[ROOM_METADATA_VAULT_SUMMARY_GM_IA]) {
+        console.log('[GM AI] Found vault summary (GM Vault bridge)');
+        this._processVaultConfig(metadata[ROOM_METADATA_VAULT_SUMMARY_GM_IA]);
+        return true;
+      }
+
+      // 2. Fallback: fullConfig if present
       if (metadata && metadata[ROOM_METADATA_FULL_CONFIG]) {
         console.log('[GM AI] Found full vault config in room metadata');
         this._processVaultConfig(metadata[ROOM_METADATA_FULL_CONFIG]);
         return true;
       }
 
-      // 2. Fallback to pagesConfig (only visible-to-players pages)
+      // 3. Fallback: pagesConfig (visible-to-players only)
       if (metadata && metadata[ROOM_METADATA_PAGES_CONFIG]) {
         console.log('[GM AI] Found visible pages config in room metadata');
         this._processVaultConfig(metadata[ROOM_METADATA_PAGES_CONFIG]);
         return true;
       }
 
-      console.log('[GM AI] No vault data found in room metadata');
+      console.log('[GM AI] No vault data in room metadata. Open GM Vault and save to publish summary for GM AI.');
       return false;
     } catch (e) {
       console.warn('[GM AI] Error reading room metadata:', e);
