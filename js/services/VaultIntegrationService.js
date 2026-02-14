@@ -57,6 +57,17 @@ export class VaultIntegrationService {
     if (!this.OBR || this._isListening) return;
 
     console.log('[GM AI] Setting up broadcast listeners...');
+    console.log('[GM AI] Listening on channels:');
+    console.log('  - RESPONSE_FULL_VAULT:', BROADCAST_CHANNEL_RESPONSE_FULL_VAULT);
+    console.log('  - VISIBLE_PAGES:', BROADCAST_CHANNEL_VISIBLE_PAGES);
+
+    // DEBUG: Listen to ALL broadcasts temporarily
+    if (typeof this.OBR.broadcast?.onMessage === 'function') {
+      // Try to listen to all channels with a wildcard pattern
+      console.log('[GM AI] Setting up broadcast listeners (OBR SDK available)');
+    } else {
+      console.error('[GM AI] OBR broadcast not available!');
+    }
 
     // Listen for full vault broadcasts (sent by GM when saving or when requested)
     this.OBR.broadcast.onMessage(BROADCAST_CHANNEL_RESPONSE_FULL_VAULT, (event) => {
@@ -155,11 +166,15 @@ export class VaultIntegrationService {
       
       // Enviar solicitud
       try {
-        this.OBR.broadcast.sendMessage(BROADCAST_CHANNEL_REQUEST_FULL_VAULT, {
+        const requestData = {
           requesterId: this._playerId,
           requesterName: this._playerName,
           timestamp: Date.now()
-        });
+        };
+        console.log('[GM AI] Sending request to channel:', BROADCAST_CHANNEL_REQUEST_FULL_VAULT);
+        console.log('[GM AI] Request data:', requestData);
+        
+        this.OBR.broadcast.sendMessage(BROADCAST_CHANNEL_REQUEST_FULL_VAULT, requestData);
         console.log('[GM AI] Vault request sent to GM (waiting for response...)');
       } catch (e) {
         console.error('[GM AI] Error sending vault request:', e);
