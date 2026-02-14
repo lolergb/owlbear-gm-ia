@@ -27,10 +27,7 @@ export class AppController {
     const input = document.getElementById('chat-input');
     const btnSettings = document.getElementById('btn-settings');
     const btnSettingsClose = document.getElementById('btn-settings-close');
-    const apiBaseUrl = document.getElementById('api-base-url');
-    const patreonToken = document.getElementById('patreon-token');
-    const documentUrls = document.getElementById('document-urls');
-    const aiModel = document.getElementById('ai-model');
+    const btnSettingsSave = document.getElementById('btn-settings-save');
     const settingsPanel = document.getElementById('settings-panel');
 
     const send = () => this._sendMessage();
@@ -47,23 +44,17 @@ export class AppController {
       this.chatPanel.hideNotice();
       settingsPanel?.classList.remove('hidden');
     });
+
     btnSettingsClose?.addEventListener('click', () => {
       settingsPanel?.classList.add('hidden');
+    });
+
+    btnSettingsSave?.addEventListener('click', () => {
       this._saveSettingsFromUI();
+      settingsPanel?.classList.add('hidden');
       this.tierService.invalidateCache();
       this._refreshTier();
     });
-
-    const saveAndClose = () => {
-      this._saveSettingsFromUI();
-      settingsPanel?.classList.add('hidden');
-      this.tierService.invalidateCache();
-      this._refreshTier();
-    };
-    apiBaseUrl?.addEventListener('blur', saveAndClose);
-    patreonToken?.addEventListener('blur', saveAndClose);
-    documentUrls?.addEventListener('blur', saveAndClose);
-    aiModel?.addEventListener('change', saveAndClose);
 
     this.chatPanel.limitsEl?.addEventListener('click', (e) => {
       if (e.target?.getAttribute('data-action') === 'patreon') {
@@ -109,14 +100,7 @@ export class AppController {
     this.chatPanel.hideNotice();
 
     if (!this.configService.hasValidApiBase()) {
-      this.chatPanel.showNotice('Configura la URL del backend en Ajustes (icono de engranaje).', true);
-      return;
-    }
-
-    const usedToday = getUsedToday();
-    const tierInfo = await this.tierService.getTier();
-    if (!this.tierService.canSendMessage(usedToday, tierInfo.dailyLimit)) {
-      this.chatPanel.showNotice('Límite de mensajes del plan gratuito alcanzado. Conéctate con Patreon para premium.', true);
+      this.chatPanel.showNotice('Configure the backend URL in Settings (gear icon).', true);
       return;
     }
 
@@ -135,10 +119,10 @@ export class AppController {
     if (this._loadingEl) {
       if (result.error) {
         this.chatService.addErrorMessage(result.error);
-        this.chatPanel.replaceLoadingWithMessage(this._loadingEl, result.error || 'Error desconocido.', true);
+        this.chatPanel.replaceLoadingWithMessage(this._loadingEl, result.error || 'Unknown error.', true);
       } else {
         incrementUsedToday();
-        const content = result.content || '(Sin respuesta.)';
+        const content = result.content || '(No response.)';
         this.chatService.addAssistantMessage(content);
         this.chatPanel.replaceLoadingWithMessage(this._loadingEl, content);
       }
@@ -147,10 +131,10 @@ export class AppController {
       this.chatPanel.removeLoading();
       if (result.error) {
         this.chatService.addErrorMessage(result.error);
-        this.chatPanel.appendMessage('assistant', result.error || 'Error desconocido.', true);
+        this.chatPanel.appendMessage('assistant', result.error || 'Unknown error.', true);
       } else {
         incrementUsedToday();
-        const content = result.content || '(Sin respuesta.)';
+        const content = result.content || '(No response.)';
         this.chatService.addAssistantMessage(content);
         this.chatPanel.appendMessage('assistant', content);
       }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GM IA - D&D Assistant</title>
+  <title>GM AI - D&D Assistant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -14,10 +14,9 @@
     <header class="header">
       <div class="header__brand">
         <span class="header__icon">⚔️</span>
-        <h1 class="header__title">GM IA</h1>
-        <span class="header__badge" id="tier-badge" title="Plan actual">Free</span>
+        <h1 class="header__title">GM AI</h1>
       </div>
-      <button type="button" class="btn btn--icon btn--ghost" id="btn-settings" title="Configuración" aria-label="Configuración">
+      <button type="button" class="btn btn--icon btn--ghost" id="btn-settings" title="Settings" aria-label="Settings">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-1.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h1.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v1.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-1.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
     </header>
@@ -26,49 +25,45 @@
       <div class="chat" id="chat">
         <div class="chat__messages" id="chat-messages">
           <div class="welcome" id="welcome">
-            <p>Soy tu asistente experto en <strong>D&D 5e</strong> basado en el SRD 5.2 (Creative Commons).</p>
-            <p>Pregunta sobre reglas, criaturas, hechizos, clases o cualquier cosa del juego.</p>
-            <span class="welcome__ref">Referencia: <a href="https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf" target="_blank" rel="noopener">SRD 5.2 PDF</a></span>
+            <p>I'm your expert assistant for <strong>D&D 5e</strong> based on the SRD 5.2 (Creative Commons).</p>
+            <p>Ask me about rules, creatures, spells, classes, or anything related to the game.</p>
+            <span class="welcome__ref">Reference: <a href="https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf" target="_blank" rel="noopener">SRD 5.2 PDF</a></span>
           </div>
         </div>
         <div class="chat__notice hidden" id="chat-notice" role="alert"></div>
         <div class="chat__input-wrap">
-          <textarea class="chat__input" id="chat-input" placeholder="Escribe tu pregunta sobre D&D..." rows="2" maxlength="2000" autocomplete="on"></textarea>
-          <button type="button" class="btn btn--primary chat__send" id="btn-send" title="Enviar">
+          <textarea class="chat__input" id="chat-input" placeholder="Ask me about D&D..." rows="2" maxlength="2000" autocomplete="on"></textarea>
+          <button type="button" class="btn btn--primary chat__send" id="btn-send" title="Send">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
-        <div class="chat__limits" id="chat-limits"></div>
       </div>
     </main>
 
     <aside class="settings-panel hidden" id="settings-panel">
       <div class="settings-panel__content">
-        <h2>Configuración</h2>
-        <p class="settings-panel__hint">La API se llama desde el servidor. Configura las variables en Netlify (o .env).</p>
+        <h2>Settings</h2>
         <div class="settings-panel__field">
-          <label for="api-base-url">URL base del backend</label>
-          <input type="url" id="api-base-url" placeholder="https://tu-sitio.netlify.app">
-        </div>
-        <div class="settings-panel__field">
-          <label for="ai-model">Motor de IA</label>
+          <label for="ai-model">AI Model</label>
           <select id="ai-model">
-            <option value="gpt-4o-mini">GPT-4o Mini (rápido, económico)</option>
-            <option value="gpt-4o">GPT-4o (equilibrado)</option>
-            <option value="gpt-4-turbo">GPT-4 Turbo (avanzado)</option>
-            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (básico)</option>
+            <option value="gpt-4o-mini">GPT-4o Mini (fast, affordable)</option>
+            <option value="gpt-4o">GPT-4o (balanced)</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo (advanced)</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (basic)</option>
           </select>
         </div>
         <div class="settings-panel__field">
-          <label for="document-urls">URLs de documentos (una por línea)</label>
+          <label for="document-urls">Document URLs (one per line)</label>
           <textarea id="document-urls" rows="4" placeholder="https://example.com/doc1.pdf&#10;https://example.com/doc2.pdf"></textarea>
-          <small>Documentos que la IA consultará para responder</small>
+          <small>Documents that the AI will reference when responding</small>
         </div>
-        <div class="settings-panel__field">
-          <label for="patreon-token">Token Patreon (opcional, para premium)</label>
-          <input type="password" id="patreon-token" placeholder="Tu token de Patreon" autocomplete="off">
+        <!-- Hidden fields for backend configuration -->
+        <input type="hidden" id="api-base-url">
+        <input type="hidden" id="patreon-token">
+        <div class="settings-panel__actions">
+          <button type="button" class="btn btn--primary" id="btn-settings-save">Save</button>
+          <button type="button" class="btn btn--secondary" id="btn-settings-close">Close</button>
         </div>
-        <button type="button" class="btn btn--secondary" id="btn-settings-close">Cerrar</button>
       </div>
     </aside>
   </div>

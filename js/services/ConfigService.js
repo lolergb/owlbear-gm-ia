@@ -20,12 +20,14 @@ export class ConfigService {
 
   _load() {
     try {
-      this._apiBaseUrl = localStorage.getItem(KEY_API_BASE) || '';
+      // Use current domain as default API base URL
+      const defaultBaseUrl = window.location.origin;
+      this._apiBaseUrl = localStorage.getItem(KEY_API_BASE) || defaultBaseUrl;
       this._patreonToken = localStorage.getItem(KEY_PATREON_TOKEN) || '';
       this._documentUrls = localStorage.getItem(KEY_DOCUMENT_URLS) || '';
       this._aiModel = localStorage.getItem(KEY_AI_MODEL) || 'gpt-4o-mini';
     } catch (e) {
-      console.warn('[GM IA] ConfigService: error loading config', e);
+      console.warn('[GM AI] ConfigService: error loading config', e);
     }
   }
 
@@ -39,7 +41,7 @@ export class ConfigService {
       if (this._apiBaseUrl) localStorage.setItem(KEY_API_BASE, this._apiBaseUrl);
       else localStorage.removeItem(KEY_API_BASE);
     } catch (e) {
-      console.warn('[GM IA] ConfigService: error saving api base', e);
+      console.warn('[GM AI] ConfigService: error saving api base', e);
     }
   }
 
@@ -53,7 +55,7 @@ export class ConfigService {
       if (this._patreonToken) localStorage.setItem(KEY_PATREON_TOKEN, this._patreonToken);
       else localStorage.removeItem(KEY_PATREON_TOKEN);
     } catch (e) {
-      console.warn('[GM IA] ConfigService: error saving patreon token', e);
+      console.warn('[GM AI] ConfigService: error saving patreon token', e);
     }
   }
 
@@ -72,7 +74,7 @@ export class ConfigService {
       if (this._documentUrls) localStorage.setItem(KEY_DOCUMENT_URLS, this._documentUrls);
       else localStorage.removeItem(KEY_DOCUMENT_URLS);
     } catch (e) {
-      console.warn('[GM IA] ConfigService: error saving document urls', e);
+      console.warn('[GM AI] ConfigService: error saving document urls', e);
     }
   }
 
@@ -86,7 +88,7 @@ export class ConfigService {
       if (this._aiModel) localStorage.setItem(KEY_AI_MODEL, this._aiModel);
       else localStorage.removeItem(KEY_AI_MODEL);
     } catch (e) {
-      console.warn('[GM IA] ConfigService: error saving ai model', e);
+      console.warn('[GM AI] ConfigService: error saving ai model', e);
     }
   }
 }

@@ -23,7 +23,7 @@ export class ChatService {
 
   addErrorMessage(content) {
     this._messages.push({ role: 'user', content: '' });
-    this._messages.push({ role: 'assistant', content: content || 'Error desconocido.', isError: true });
+    this._messages.push({ role: 'assistant', content: content || 'Unknown error.', isError: true });
   }
 
   /**

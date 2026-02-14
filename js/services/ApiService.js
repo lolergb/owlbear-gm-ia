@@ -23,7 +23,7 @@ export class ApiService {
   async chat(messages, options = {}) {
     const base = this.getBaseUrl();
     if (!base) {
-      return { content: '', error: 'Configura la URL del backend en Ajustes (icono de engranaje).' };
+      return { content: '', error: 'Configure the backend URL in Settings (gear icon).' };
     }
 
     const url = `${base}/.netlify/functions/chat`;
@@ -57,11 +57,11 @@ export class ApiService {
       }
 
       if (data.limitReached) {
-        return { content: '', error: 'Has alcanzado el límite de mensajes del plan gratuito. Conéctate con Patreon para premium.' };
+        return { content: '', error: 'Message limit reached.' };
       }
 
       if (data.error) {
-        return { content: '', error: typeof data.error === 'string' ? data.error : (data.error.message || data.error.code || 'Error del servidor') };
+        return { content: '', error: typeof data.error === 'string' ? data.error : (data.error.message || data.error.code || 'Server error') };
       }
 
       const content = (data.choices && data.choices[0] && data.choices[0].message)
@@ -69,8 +69,8 @@ export class ApiService {
         : (data.content || '');
       return { content: (content || '').trim() };
     } catch (e) {
-      console.error('[GM IA] ApiService chat error', e);
-      return { content: '', error: e.message || 'Error de conexión.' };
+      console.error('[GM AI] ApiService chat error', e);
+      return { content: '', error: e.message || 'Connection error.' };
     }
   }
 }

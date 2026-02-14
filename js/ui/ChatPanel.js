@@ -124,24 +124,14 @@ export class ChatPanel {
   }
 
   setTierBadge(tier, remaining) {
-    if (!this.tierBadge) return;
-    this.tierBadge.textContent = tier === 'premium' ? 'Premium' : 'Free';
-    this.tierBadge.classList.toggle('premium', tier === 'premium');
-    this.tierBadge.title = tier === 'premium' ? 'Plan premium' : `Plan gratuito${remaining != null ? ` (${remaining} mensajes hoy)` : ''}`;
+    // Badge removed from UI, keeping method for compatibility
   }
 
   setLimitsHtml(html) {
-    if (this.limitsEl) this.limitsEl.innerHTML = html || '';
+    // Limits hidden, keeping method for compatibility
   }
 
   renderLimits(tier, usedToday, dailyLimit) {
-    if (tier === 'premium') {
-      this.setLimitsHtml('Plan premium: sin límite.');
-      return;
-    }
-    const remaining = Math.max(0, (dailyLimit || 10) - (usedToday || 0));
-    this.setLimitsHtml(
-      `${remaining} de ${dailyLimit || 10} mensajes hoy. <a href="#" data-action="patreon">Obtener premium</a>`
-    );
+    // Limits hidden, keeping method for compatibility
   }
 }

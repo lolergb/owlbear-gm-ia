@@ -501,6 +501,12 @@ html, body {
   margin-top: 4px;
 }
 
-.settings-panel #btn-settings-close {
-  margin-top: 16px;
+.settings-panel__actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.settings-panel__actions .btn {
+  flex: 1;
 }

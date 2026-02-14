@@ -1,28 +1,27 @@
 /**
- * Netlify Function: proxy a OpenAI para el chat D&D.
- * Usa OPENAI_API_KEY desde variables de entorno (nunca exponer en cliente).
- * Referencia: SRD 5.2 https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf
+ * Netlify Function: OpenAI proxy for D&D chat.
+ * Uses OPENAI_API_KEY from environment variables (never expose on client).
+ * Reference: SRD 5.2 https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf
  */
 
 function buildSystemPrompt(documentUrls = '') {
-  let prompt = `Eres un asistente experto en Dungeons & Dragons 5ª edición (D&D 5e). Tu conocimiento se basa en el documento oficial SRD 5.2 (Systems Reference Document) bajo licencia Creative Commons, disponible en: https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf`;
+  let prompt = `You are an expert assistant for Dungeons & Dragons 5th edition (D&D 5e). Your knowledge is based on the official SRD 5.2 (Systems Reference Document) under Creative Commons license, available at: https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf`;
 
   if (documentUrls) {
     const urls = documentUrls.split('\n').map(u => u.trim()).filter(u => u);
     if (urls.length > 0) {
-      prompt += `\n\nDocumentos adicionales de referencia:\n${urls.map(u => `- ${u}`).join('\n')}`;
+      prompt += `\n\nAdditional reference documents:\n${urls.map(u => `- ${u}`).join('\n')}`;
     }
   }
 
-  prompt += `\n\nDebes:
-- Responder de forma CONCISA y DIRECTA. Evita introducciones largas.
-- Responder en el mismo idioma que use el usuario (español o inglés).
-- Basar tus respuestas en las reglas del SRD 5.2 y los documentos adicionales proporcionados.
-- Ser claro y directo sobre reglas, criaturas, hechizos, clases, razas y mecánicas.
-- Si algo no está en el SRD o documentos adicionales, indicarlo brevemente.
-- Citar la fuente solo si es esencial para la respuesta.
+  prompt += `\n\nYou must:
+- Respond CONCISELY and DIRECTLY. Avoid long introductions.
+- Base your answers on SRD 5.2 rules and the additional documents provided.
+- Be clear and direct about rules, creatures, spells, classes, races, and mechanics.
+- If something is not in the SRD or additional documents, indicate it briefly.
+- Only cite sources if essential to the answer.
 
-IMPORTANTE: Respuestas BREVES y AL GRANO. Sin florituras innecesarias.`;
+IMPORTANT: Keep responses BRIEF and TO THE POINT. No unnecessary elaboration.`;
 
   return prompt;
 }
