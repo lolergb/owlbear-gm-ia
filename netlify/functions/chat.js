@@ -7,11 +7,18 @@
 function buildSystemPrompt(documentUrls = '', vaultContext = '') {
   let prompt = `You are an expert assistant for Dungeons & Dragons 5th edition (D&D 5e). Your knowledge is based on the official SRD 5.2 (Systems Reference Document) under Creative Commons license, available at: https://media.dndbeyond.com/compendium-images/srd/5.2/SP_SRD_CC_v5.2.1.pdf`;
 
-  if (documentUrls) {
-    const urls = documentUrls.split('\n').map(u => u.trim()).filter(u => u);
-    if (urls.length > 0) {
-      prompt += `\n\nAdditional reference documents:\n${urls.map(u => `- ${u}`).join('\n')}`;
-    }
+  // Normalize document URLs (support \n and \r\n, trim, remove empty)
+  const urlList = typeof documentUrls === 'string'
+    ? documentUrls.split(/\r?\n/).map(u => u.trim()).filter(u => u.length > 0)
+    : Array.isArray(documentUrls) ? documentUrls.map(u => String(u).trim()).filter(u => u) : [];
+
+  if (urlList.length > 0) {
+    prompt += `\n\n--- USER'S REFERENCE DOCUMENTS (from Settings) ---
+The user has configured these documents as their reference materials. You MUST treat these as primary sources. When answering, refer to these documents when relevant. Do NOT say you cannot read or access them.
+
+Document URLs:
+${urlList.map(u => `- ${u}`).join('\n')}
+---`;
   }
 
   if (vaultContext) {
@@ -20,9 +27,10 @@ function buildSystemPrompt(documentUrls = '', vaultContext = '') {
 
   prompt += `\n\nYou must:
 - Respond CONCISELY and DIRECTLY. Avoid long introductions.
-- Base your answers on SRD 5.2 rules and the additional documents provided.
+- Base your answers on: (1) SRD 5.2, (2) the user's document URLs above if present, (3) GM Vault pages if listed.
+- Do NOT say you "cannot read PDFs" or "cannot access documents". The user's document URLs are their reference materials; cite them by URL or "your document" when relevant.
 - Be clear and direct about rules, creatures, spells, classes, races, and mechanics.
-- If something is not in the SRD or additional documents, indicate it briefly.
+- If something is not in the SRD or you are unsure, indicate it briefly.
 - Only cite sources if essential to the answer.
 
 IMPORTANT: Keep responses BRIEF and TO THE POINT. No unnecessary elaboration.`;

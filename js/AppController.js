@@ -186,8 +186,9 @@ export class AppController {
       vaultContext = this.vaultService.getVaultSummary();
     }
 
+    const documentUrls = this.configService.getDocumentUrls();
     const messages = this.chatService.getApiMessages(undefined);
-    const result = await this.apiService.chat(messages, { vaultContext });
+    const result = await this.apiService.chat(messages, { vaultContext, documentUrls });
 
     this.chatPanel.setInputDisabled(false);
 
