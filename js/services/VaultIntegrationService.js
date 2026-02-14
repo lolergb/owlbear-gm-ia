@@ -4,8 +4,9 @@
  * and optionally via broadcast when GM Vault is open
  */
 
-// Room metadata key used by GM Vault
-const ROOM_METADATA_KEY = 'com.dmscreen/pagesConfig';
+// Room metadata keys used by GM Vault
+const ROOM_METADATA_FULL_CONFIG = 'com.dmscreen/fullConfig';
+const ROOM_METADATA_PAGES_CONFIG = 'com.dmscreen/pagesConfig';
 
 // Broadcast channels from GM Vault (only work when GM Vault popover is open)
 const BROADCAST_CHANNEL_REQUEST_FULL_VAULT = 'com.dmscreen/requestFullVault';
@@ -60,14 +61,22 @@ export class VaultIntegrationService {
       const metadata = await this.OBR.room.getMetadata();
       console.log('[GM AI] Room metadata keys:', Object.keys(metadata || {}));
 
-      if (metadata && metadata[ROOM_METADATA_KEY]) {
-        console.log('[GM AI] Found vault data in room metadata');
-        this._processVaultConfig(metadata[ROOM_METADATA_KEY]);
+      // 1. Try fullConfig first (has ALL pages, not just visible-to-players)
+      if (metadata && metadata[ROOM_METADATA_FULL_CONFIG]) {
+        console.log('[GM AI] Found full vault config in room metadata');
+        this._processVaultConfig(metadata[ROOM_METADATA_FULL_CONFIG]);
         return true;
-      } else {
-        console.log('[GM AI] No vault data found in room metadata (key:', ROOM_METADATA_KEY, ')');
-        return false;
       }
+
+      // 2. Fallback to pagesConfig (only visible-to-players pages)
+      if (metadata && metadata[ROOM_METADATA_PAGES_CONFIG]) {
+        console.log('[GM AI] Found visible pages config in room metadata');
+        this._processVaultConfig(metadata[ROOM_METADATA_PAGES_CONFIG]);
+        return true;
+      }
+
+      console.log('[GM AI] No vault data found in room metadata');
+      return false;
     } catch (e) {
       console.warn('[GM AI] Error reading room metadata:', e);
       return false;
@@ -129,39 +138,63 @@ export class VaultIntegrationService {
 
   /**
    * Processes vault configuration data into a usable format
+   * Handles nested categories (categories can contain sub-categories)
    * @param {Object} config - Vault configuration
    * @private
    */
   _processVaultConfig(config) {
     if (!config || !config.categories) {
-      console.warn('[GM AI] Invalid vault config received');
+      console.warn('[GM AI] Invalid vault config received:', config);
       return;
     }
 
+    console.log('[GM AI] Processing vault config, top-level categories:', config.categories.length);
+
     const vaultData = {
-      categories: config.categories || [],
+      categories: [],
       pages: [],
       lastUpdate: Date.now()
     };
 
-    config.categories.forEach(category => {
-      if (category.pages && Array.isArray(category.pages)) {
-        category.pages.forEach(page => {
-          if (page.visible !== false) {
+    // Recursively extract pages from nested categories
+    const extractPages = (categories, parentPath = '') => {
+      if (!Array.isArray(categories)) return;
+
+      categories.forEach(category => {
+        const categoryName = parentPath
+          ? `${parentPath} > ${category.name || 'Uncategorized'}`
+          : (category.name || 'Uncategorized');
+
+        vaultData.categories.push(categoryName);
+
+        // Extract pages from this category
+        if (category.pages && Array.isArray(category.pages)) {
+          category.pages.forEach(page => {
             vaultData.pages.push({
               id: page.id,
               title: page.title || 'Untitled',
-              category: category.name || 'Uncategorized',
+              category: categoryName,
               url: page.url || null,
               icon: page.icon || null
             });
-          }
-        });
-      }
-    });
+          });
+        }
+
+        // Recurse into sub-categories
+        if (category.categories && Array.isArray(category.categories)) {
+          extractPages(category.categories, categoryName);
+        }
+      });
+    };
+
+    extractPages(config.categories);
 
     this._cachedVaultData = vaultData;
     console.log(`[GM AI] Vault data processed: ${vaultData.pages.length} pages in ${vaultData.categories.length} categories`);
+
+    if (vaultData.pages.length > 0) {
+      console.log('[GM AI] Sample pages:', vaultData.pages.slice(0, 3).map(p => p.title));
+    }
   }
 
   /**
