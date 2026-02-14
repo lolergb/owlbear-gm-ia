@@ -1,13 +1,16 @@
 /**
  * @fileoverview Service for integrating with GM Vault
- * Uses OBR broadcast to get vault data from GM in real-time
+ * Reads GM Vault data from OBR room metadata (persistent, always available)
+ * and optionally via broadcast when GM Vault is open
  */
 
-// Broadcast channels from GM Vault
+// Room metadata key used by GM Vault
+const ROOM_METADATA_KEY = 'com.dmscreen/pagesConfig';
+
+// Broadcast channels from GM Vault (only work when GM Vault popover is open)
 const BROADCAST_CHANNEL_REQUEST_FULL_VAULT = 'com.dmscreen/requestFullVault';
 const BROADCAST_CHANNEL_RESPONSE_FULL_VAULT = 'com.dmscreen/responseFullVault';
 const BROADCAST_CHANNEL_VISIBLE_PAGES = 'com.dmscreen/visiblePages';
-const ROOM_METADATA_KEY = 'com.dmscreen/config';
 
 export class VaultIntegrationService {
   constructor() {
@@ -16,7 +19,6 @@ export class VaultIntegrationService {
     this._isListening = false;
     this._playerId = null;
     this._playerName = 'GM AI';
-    this._pendingRequest = null; // Para resolver la promesa cuando llega la respuesta
   }
 
   /**
@@ -32,167 +34,107 @@ export class VaultIntegrationService {
     this.OBR = obr;
 
     try {
-      // Get player info
-      const player = await this.OBR.player.getRole();
       this._playerId = await this.OBR.player.getId();
       this._playerName = await this.OBR.player.getName();
-      
       console.log('[GM AI] Vault integration initialized for:', this._playerName);
-      
-      // Set up listeners
+
+      // Set up broadcast listeners for live updates
       this._setupBroadcastListeners();
-      
-      // Try to get initial vault data
-      await this._tryGetInitialVaultData();
+
+      // Load initial data from room metadata
+      await this._loadFromRoomMetadata();
     } catch (e) {
       console.warn('[GM AI] Error initializing vault integration:', e);
     }
   }
 
   /**
-   * Sets up broadcast listeners for vault updates
+   * Loads vault data from OBR room metadata (always available, no need for GM Vault to be open)
+   * @returns {Promise<boolean>} True if data was found
+   * @private
+   */
+  async _loadFromRoomMetadata() {
+    if (!this.OBR) return false;
+
+    try {
+      const metadata = await this.OBR.room.getMetadata();
+      console.log('[GM AI] Room metadata keys:', Object.keys(metadata || {}));
+
+      if (metadata && metadata[ROOM_METADATA_KEY]) {
+        console.log('[GM AI] Found vault data in room metadata');
+        this._processVaultConfig(metadata[ROOM_METADATA_KEY]);
+        return true;
+      } else {
+        console.log('[GM AI] No vault data found in room metadata (key:', ROOM_METADATA_KEY, ')');
+        return false;
+      }
+    } catch (e) {
+      console.warn('[GM AI] Error reading room metadata:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Sets up broadcast listeners for live vault updates (only work when GM Vault is open)
    * @private
    */
   _setupBroadcastListeners() {
     if (!this.OBR || this._isListening) return;
 
-    console.log('[GM AI] Setting up broadcast listeners...');
-    console.log('[GM AI] Listening on channels:');
-    console.log('  - RESPONSE_FULL_VAULT:', BROADCAST_CHANNEL_RESPONSE_FULL_VAULT);
-    console.log('  - VISIBLE_PAGES:', BROADCAST_CHANNEL_VISIBLE_PAGES);
-
-    // DEBUG: Listen to ALL broadcasts temporarily
-    if (typeof this.OBR.broadcast?.onMessage === 'function') {
-      // Try to listen to all channels with a wildcard pattern
-      console.log('[GM AI] Setting up broadcast listeners (OBR SDK available)');
-    } else {
-      console.error('[GM AI] OBR broadcast not available!');
-    }
-
-    // Listen for full vault broadcasts (sent by GM when saving or when requested)
+    // Listen for full vault broadcasts
     this.OBR.broadcast.onMessage(BROADCAST_CHANNEL_RESPONSE_FULL_VAULT, (event) => {
-      console.log('[GM AI] Broadcast received on RESPONSE_FULL_VAULT channel:', event.data);
-      const { config, requesterId } = event.data;
+      const { config } = event.data;
       if (config) {
-        console.log('[GM AI] Received vault update from GM');
+        console.log('[GM AI] Received live vault update from GM');
         this._processVaultConfig(config);
-        
-        // Resolver promesa pendiente si existe
-        if (this._pendingRequest && (!requesterId || requesterId === this._playerId)) {
-          console.log('[GM AI] Resolving pending request');
-          this._pendingRequest.resolve(true);
-          this._pendingRequest = null;
-        }
-      } else {
-        console.warn('[GM AI] Received broadcast but no config data');
       }
     });
 
-    // Listen for visible pages updates (lighter payload)
+    // Listen for visible pages updates
     this.OBR.broadcast.onMessage(BROADCAST_CHANNEL_VISIBLE_PAGES, (event) => {
-      console.log('[GM AI] Broadcast received on VISIBLE_PAGES channel');
       const { config } = event.data;
       if (config) {
         console.log('[GM AI] Received visible pages update from GM');
         this._processVaultConfig(config);
-        
-        // También resolver promesa pendiente con visible pages
-        if (this._pendingRequest) {
-          console.log('[GM AI] Resolving pending request with visible pages');
-          this._pendingRequest.resolve(true);
-          this._pendingRequest = null;
-        }
       }
     });
 
     this._isListening = true;
-    console.log('[GM AI] Broadcast listeners active');
   }
 
   /**
-   * Tries to get initial vault data from multiple sources
-   * @private
-   */
-  async _tryGetInitialVaultData() {
-    if (!this.OBR) return;
-
-    try {
-      // 1. Try to get from room metadata (visible pages only - quick check)
-      const metadata = await this.OBR.room.getMetadata();
-      if (metadata && metadata[ROOM_METADATA_KEY]) {
-        console.log('[GM AI] Found vault structure in room metadata');
-        this._processVaultConfig(metadata[ROOM_METADATA_KEY]);
-      }
-
-      // 2. ALWAYS request full vault from GM via broadcast (to get complete data)
-      console.log('[GM AI] Requesting full vault from GM...');
-      await this.requestVaultFromGM();
-    } catch (e) {
-      console.warn('[GM AI] Error getting initial vault data:', e);
-    }
-  }
-
-  /**
-   * Requests vault data from GM via broadcast with timeout
-   * @returns {Promise<boolean>} True if vault was received
+   * Refreshes vault data: reads room metadata + optionally requests from GM via broadcast
+   * @returns {Promise<boolean>} True if data was found
    */
   async requestVaultFromGM() {
-    if (!this.OBR) {
-      console.warn('[GM AI] Cannot request vault: OBR not available');
-      return false;
+    if (!this.OBR) return false;
+
+    // 1. Always read from room metadata (reliable, always available)
+    const found = await this._loadFromRoomMetadata();
+
+    // 2. Also try broadcast in case GM Vault is open (may get richer data)
+    try {
+      this.OBR.broadcast.sendMessage(BROADCAST_CHANNEL_REQUEST_FULL_VAULT, {
+        requesterId: this._playerId,
+        requesterName: this._playerName,
+        timestamp: Date.now()
+      });
+      console.log('[GM AI] Broadcast request sent (will use if GM Vault is open)');
+    } catch (e) {
+      // Broadcast failed, no big deal - we already have room metadata
     }
 
-    return new Promise((resolve, reject) => {
-      console.log('[GM AI] Requesting vault from GM...');
-      
-      // Timeout de 5 segundos
-      const timeout = setTimeout(() => {
-        console.warn('[GM AI] Timeout waiting for vault response from GM (5s)');
-        this._pendingRequest = null;
-        resolve(false);
-      }, 5000);
-      
-      // Guardar la promesa pendiente para que el listener la resuelva
-      this._pendingRequest = {
-        resolve: (success) => {
-          clearTimeout(timeout);
-          resolve(success);
-        },
-        reject: (error) => {
-          clearTimeout(timeout);
-          reject(error);
-        }
-      };
-      
-      // Enviar solicitud
-      try {
-        const requestData = {
-          requesterId: this._playerId,
-          requesterName: this._playerName,
-          timestamp: Date.now()
-        };
-        console.log('[GM AI] Sending request to channel:', BROADCAST_CHANNEL_REQUEST_FULL_VAULT);
-        console.log('[GM AI] Request data:', requestData);
-        
-        this.OBR.broadcast.sendMessage(BROADCAST_CHANNEL_REQUEST_FULL_VAULT, requestData);
-        console.log('[GM AI] Vault request sent to GM (waiting for response...)');
-      } catch (e) {
-        console.error('[GM AI] Error sending vault request:', e);
-        clearTimeout(timeout);
-        this._pendingRequest = null;
-        resolve(false);
-      }
-    });
+    return found;
   }
 
   /**
-   * Processes vault configuration data
+   * Processes vault configuration data into a usable format
    * @param {Object} config - Vault configuration
    * @private
    */
   _processVaultConfig(config) {
     if (!config || !config.categories) {
-      this._cachedVaultData = null;
+      console.warn('[GM AI] Invalid vault config received');
       return;
     }
 
@@ -202,7 +144,6 @@ export class VaultIntegrationService {
       lastUpdate: Date.now()
     };
 
-    // Extract all pages from categories
     config.categories.forEach(category => {
       if (category.pages && Array.isArray(category.pages)) {
         category.pages.forEach(page => {
@@ -224,7 +165,7 @@ export class VaultIntegrationService {
   }
 
   /**
-   * Checks if GM Vault is available
+   * Checks if GM Vault data is available
    * @returns {boolean}
    */
   isVaultAvailable() {
@@ -232,7 +173,7 @@ export class VaultIntegrationService {
   }
 
   /**
-   * Gets all vault data
+   * Gets cached vault data
    * @returns {Object|null}
    */
   getVaultData() {
@@ -245,14 +186,14 @@ export class VaultIntegrationService {
    */
   getVaultSummary() {
     const vaultData = this.getVaultData();
-    
+
     if (!vaultData || vaultData.pages.length === 0) {
       return '';
     }
 
     let summary = '\n\n## GM Vault Content\n\n';
     summary += `The user has a GM Vault with ${vaultData.pages.length} pages organized in ${vaultData.categories.length} categories.\n\n`;
-    
+
     // Group pages by category
     const pagesByCategory = {};
     vaultData.pages.forEach(page => {
@@ -262,7 +203,6 @@ export class VaultIntegrationService {
       pagesByCategory[page.category].push(page);
     });
 
-    // Format as list
     summary += 'Available pages:\n';
     Object.keys(pagesByCategory).sort().forEach(category => {
       summary += `\n**${category}:**\n`;
@@ -277,7 +217,7 @@ export class VaultIntegrationService {
   }
 
   /**
-   * Invalidates the cache and requests fresh data
+   * Invalidates the cache and refreshes data
    */
   async invalidateCache() {
     this._cachedVaultData = null;
