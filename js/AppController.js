@@ -21,9 +21,15 @@ export class AppController {
   async init(OBR) {
     // Initialize vault integration with OBR
     if (OBR) {
+      this.vaultService.setOnVaultUpdated(() => {
+        const panel = document.getElementById('settings-panel');
+        if (panel && !panel.classList.contains('hidden')) {
+          this._updateVaultStatus();
+        }
+      });
       await this.vaultService.init(OBR);
     }
-    
+
     await this._refreshTier();
     this._bindEvents();
     this._loadSettingsIntoUI();
