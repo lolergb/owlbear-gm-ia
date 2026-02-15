@@ -9,6 +9,7 @@ const KEY_PATREON_TOKEN = STORAGE_KEY_PREFIX + 'patreon-token';
 const KEY_DOCUMENT_URLS = STORAGE_KEY_PREFIX + 'document-urls';
 const KEY_AI_MODEL = STORAGE_KEY_PREFIX + 'ai-model';
 const KEY_USE_VAULT = STORAGE_KEY_PREFIX + 'use-vault';
+const KEY_OPENAI_API_KEY = STORAGE_KEY_PREFIX + 'openai-api-key';
 
 export class ConfigService {
   constructor() {
@@ -17,6 +18,7 @@ export class ConfigService {
     this._documentUrls = null;
     this._aiModel = null;
     this._useVault = null;
+    this._openaiApiKey = null;
     this._load();
   }
 
@@ -29,6 +31,7 @@ export class ConfigService {
       this._documentUrls = localStorage.getItem(KEY_DOCUMENT_URLS) || '';
       this._aiModel = localStorage.getItem(KEY_AI_MODEL) || 'gpt-4o-mini';
       this._useVault = localStorage.getItem(KEY_USE_VAULT) === 'true';
+      this._openaiApiKey = localStorage.getItem(KEY_OPENAI_API_KEY) || '';
     } catch (e) {
       console.warn('[GM AI] ConfigService: error loading config', e);
     }
@@ -106,5 +109,24 @@ export class ConfigService {
     } catch (e) {
       console.warn('[GM AI] ConfigService: error saving use vault setting', e);
     }
+  }
+
+  getOpenAiApiKey() {
+    return this._openaiApiKey || '';
+  }
+
+  setOpenAiApiKey(key) {
+    this._openaiApiKey = (key || '').trim();
+    try {
+      if (this._openaiApiKey) localStorage.setItem(KEY_OPENAI_API_KEY, this._openaiApiKey);
+      else localStorage.removeItem(KEY_OPENAI_API_KEY);
+    } catch (e) {
+      console.warn('[GM AI] ConfigService: error saving OpenAI API key', e);
+    }
+  }
+
+  hasOpenAiApiKey() {
+    const key = this.getOpenAiApiKey();
+    return key.length > 0 && key.startsWith('sk-');
   }
 }

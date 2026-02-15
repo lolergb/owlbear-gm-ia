@@ -1,6 +1,10 @@
 /**
  * @fileoverview Servicio de tier freemium (Patreon).
  * Consulta al backend el plan del usuario; el uso diario se rastrea en cliente.
+ * 
+ * ⚠️ BYOK MODE: This service is currently NOT USED.
+ * Users now bring their own OpenAI API key, so there's no tier/limit system.
+ * Code is kept here for potential future re-activation.
  */
 
 import { getUsedToday } from './UsageTracker.js';

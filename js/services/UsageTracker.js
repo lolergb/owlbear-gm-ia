@@ -1,6 +1,10 @@
 /**
  * @fileoverview Rastrea el uso diario de mensajes en el cliente (freemium).
  * Clave en localStorage: gm-ia-used-YYYY-MM-DD
+ * 
+ * ⚠️ BYOK MODE: This service is currently NOT USED.
+ * Users now bring their own OpenAI API key, so there's no usage tracking.
+ * Code is kept here for potential future re-activation.
  */
 
 const KEY_PREFIX = 'gm-ia-used-';

@@ -2,15 +2,17 @@
  * @fileoverview Controlador principal: orquesta servicios y UI del chat.
  */
 
-import { ConfigService, TierService, ChatService, ApiService } from './services/index.js';
-import { getUsedToday, incrementUsedToday } from './services/UsageTracker.js';
+import { ConfigService, ChatService, ApiService } from './services/index.js';
+// BYOK: Tier system commented out (not needed when users bring their own API key)
+// import { TierService } from './services/index.js';
+// import { getUsedToday, incrementUsedToday } from './services/UsageTracker.js';
 import { ChatPanel } from './ui/ChatPanel.js';
 import { VaultIntegrationService } from './services/VaultIntegrationService.js';
 
 export class AppController {
   constructor() {
     this.configService = new ConfigService();
-    this.tierService = new TierService(this.configService);
+    // this.tierService = new TierService(this.configService); // BYOK: Commented out
     this.chatService = new ChatService();
     this.apiService = new ApiService(this.configService);
     this.vaultService = new VaultIntegrationService();
@@ -30,7 +32,7 @@ export class AppController {
       await this.vaultService.init(OBR);
     }
 
-    await this._refreshTier();
+    // await this._refreshTier(); // BYOK: Commented out
     this._bindEvents();
     this._loadSettingsIntoUI();
     this._updateVaultStatus();
@@ -69,29 +71,32 @@ export class AppController {
     btnSettingsSave?.addEventListener('click', () => {
       this._saveSettingsFromUI();
       settingsPanel?.classList.add('hidden');
-      this.tierService.invalidateCache();
-      this._refreshTier();
+      // this.tierService.invalidateCache(); // BYOK: Commented out
+      // this._refreshTier(); // BYOK: Commented out
     });
 
     useVaultCheckbox?.addEventListener('change', () => {
       this._updateVaultStatus();
     });
 
-    this.chatPanel.limitsEl?.addEventListener('click', (e) => {
-      if (e.target?.getAttribute('data-action') === 'patreon') {
-        e.preventDefault();
-        window.open('https://www.patreon.com/', '_blank');
-      }
-    });
+    // BYOK: Patreon listener commented out (no tier system)
+    // this.chatPanel.limitsEl?.addEventListener('click', (e) => {
+    //   if (e.target?.getAttribute('data-action') === 'patreon') {
+    //     e.preventDefault();
+    //     window.open('https://www.patreon.com/', '_blank');
+    //   }
+    // });
   }
 
   _loadSettingsIntoUI() {
+    const openaiApiKey = document.getElementById('openai-api-key');
     const apiBase = document.getElementById('api-base-url');
     const patreon = document.getElementById('patreon-token');
     const documentUrls = document.getElementById('document-urls');
     const aiModel = document.getElementById('ai-model');
     const useVault = document.getElementById('use-vault');
     
+    if (openaiApiKey) openaiApiKey.value = this.configService.getOpenAiApiKey();
     if (apiBase) apiBase.value = this.configService.getApiBaseUrl();
     if (patreon) patreon.value = this.configService.getPatreonToken();
     if (documentUrls) documentUrls.value = this.configService.getDocumentUrls();
@@ -100,12 +105,14 @@ export class AppController {
   }
 
   _saveSettingsFromUI() {
+    const openaiApiKey = document.getElementById('openai-api-key');
     const apiBase = document.getElementById('api-base-url');
     const patreon = document.getElementById('patreon-token');
     const documentUrls = document.getElementById('document-urls');
     const aiModel = document.getElementById('ai-model');
     const useVault = document.getElementById('use-vault');
     
+    if (openaiApiKey) this.configService.setOpenAiApiKey(openaiApiKey.value);
     if (apiBase) this.configService.setApiBaseUrl(apiBase.value);
     if (patreon) this.configService.setPatreonToken(patreon.value);
     if (documentUrls) this.configService.setDocumentUrls(documentUrls.value);
@@ -155,12 +162,13 @@ export class AppController {
     }
   }
 
-  async _refreshTier() {
-    const tierInfo = await this.tierService.getTier();
-    const remaining = this.tierService.remainingFreeMessages(tierInfo.usedToday, tierInfo.dailyLimit);
-    this.chatPanel.setTierBadge(tierInfo.tier, remaining);
-    this.chatPanel.renderLimits(tierInfo.tier, tierInfo.usedToday, tierInfo.dailyLimit);
-  }
+  // BYOK: _refreshTier method commented out (no tier system)
+  // async _refreshTier() {
+  //   const tierInfo = await this.tierService.getTier();
+  //   const remaining = this.tierService.remainingFreeMessages(tierInfo.usedToday, tierInfo.dailyLimit);
+  //   this.chatPanel.setTierBadge(tierInfo.tier, remaining);
+  //   this.chatPanel.renderLimits(tierInfo.tier, tierInfo.usedToday, tierInfo.dailyLimit);
+  // }
 
   async _sendMessage() {
     const text = this.chatPanel.getInputValue();
@@ -168,8 +176,9 @@ export class AppController {
 
     this.chatPanel.hideNotice();
 
-    if (!this.configService.hasValidApiBase()) {
-      this.chatPanel.showNotice('Configure the backend URL in Settings (gear icon).', true);
+    // BYOK: Check if user has configured their OpenAI API key
+    if (!this.configService.hasOpenAiApiKey()) {
+      this.chatPanel.showNotice('Please add your OpenAI API key in Settings (gear icon) to use the assistant.', true);
       return;
     }
 
@@ -188,7 +197,10 @@ export class AppController {
 
     const documentUrls = this.configService.getDocumentUrls();
     const messages = this.chatService.getApiMessages(undefined);
-    const result = await this.apiService.chat(messages, { vaultContext, documentUrls });
+    
+    // BYOK: Call OpenAI directly using user's API key
+    const apiKey = this.configService.getOpenAiApiKey();
+    const result = await this.apiService.chatDirect(apiKey, messages, { vaultContext, documentUrls });
 
     this.chatPanel.setInputDisabled(false);
 
@@ -197,7 +209,7 @@ export class AppController {
         this.chatService.addErrorMessage(result.error);
         this.chatPanel.replaceLoadingWithMessage(this._loadingEl, result.error || 'Unknown error.', true);
       } else {
-        incrementUsedToday();
+        // incrementUsedToday(); // BYOK: No usage tracking needed
         const content = result.content || '(No response.)';
         this.chatService.addAssistantMessage(content);
         this.chatPanel.replaceLoadingWithMessage(this._loadingEl, content);
@@ -209,13 +221,13 @@ export class AppController {
         this.chatService.addErrorMessage(result.error);
         this.chatPanel.appendMessage('assistant', result.error || 'Unknown error.', true);
       } else {
-        incrementUsedToday();
+        // incrementUsedToday(); // BYOK: No usage tracking needed
         const content = result.content || '(No response.)';
         this.chatService.addAssistantMessage(content);
         this.chatPanel.appendMessage('assistant', content);
       }
     }
 
-    await this._refreshTier();
+    // await this._refreshTier(); // BYOK: No tier system needed
   }
 }
